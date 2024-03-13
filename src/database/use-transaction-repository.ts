@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { useSQLiteContext } from 'expo-sqlite/next'
 
 export interface CreateTransaction {
@@ -15,23 +16,26 @@ export interface GetTransaction {
 export function useTransactionRepository() {
   const database = useSQLiteContext()
 
-  function findLatest() {
+  const findLatest = useCallback(() => {
     return database.getAllSync<GetTransaction>(
       'SELECT * FROM transactions ORDER BY created_at DESC LIMIT 10',
     )
-  }
+  }, [database])
 
-  function findByGoal(goalId: number) {
-    const statement = database.prepareSync(
-      'SELECT * FROM transactions WHERE goal_id = $goal_id',
-    )
+  const findByGoal = useCallback(
+    (goalId: number) => {
+      const statement = database.prepareSync(
+        'SELECT * FROM transactions WHERE goal_id = $goal_id',
+      )
 
-    const result = statement.executeSync<GetTransaction>({
-      $goal_id: goalId,
-    })
+      const result = statement.executeSync<GetTransaction>({
+        $goal_id: goalId,
+      })
 
-    return result.getAllSync()
-  }
+      return result.getAllSync()
+    },
+    [database],
+  )
 
   function create(transaction: CreateTransaction) {
     const statement = database.prepareSync(

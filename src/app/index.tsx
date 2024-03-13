@@ -2,7 +2,7 @@
 import dayjs from 'dayjs'
 import { router } from 'expo-router'
 import Bottom from '@gorhom/bottom-sheet'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, View, Keyboard } from 'react-native'
 
 // DATABASE
@@ -27,8 +27,8 @@ export default function Home() {
   const [total, setTotal] = useState('')
 
   // DATABASE
-  const goalRepository = useGoalRepository()
-  const transactionRepository = useTransactionRepository()
+  const { list: listAllGoals, create: createGoal } = useGoalRepository()
+  const { findLatest: findLatestTransactions } = useTransactionRepository()
 
   // BOTTOM SHEET
   const bottomSheetRef = useRef<Bottom>(null)
@@ -47,7 +47,7 @@ export default function Home() {
         return Alert.alert('Erro', 'Valor inválido.')
       }
 
-      goalRepository.create({ name, total: totalAsNumber })
+      createGoal({ name, total: totalAsNumber })
 
       Keyboard.dismiss()
       handleBottomSheetClose()
@@ -63,18 +63,18 @@ export default function Home() {
     }
   }
 
-  async function listGoals() {
+  const listGoals = useCallback(() => {
     try {
-      const response = goalRepository.list()
+      const response = listAllGoals()
       setGoals(response)
     } catch (error) {
       console.log(error)
     }
-  }
+  }, [listAllGoals])
 
-  async function listTransactions() {
+  const listTransactions = useCallback(() => {
     try {
-      const response = transactionRepository.findLatest()
+      const response = findLatestTransactions()
 
       setTransactions(
         response.map((item) => ({
@@ -85,12 +85,12 @@ export default function Home() {
     } catch (error) {
       console.log(error)
     }
-  }
+  }, [findLatestTransactions])
 
   useEffect(() => {
     listGoals()
     listTransactions()
-  }, [])
+  }, [listGoals, listTransactions])
 
   return (
     <View className="flex-1 p-8">

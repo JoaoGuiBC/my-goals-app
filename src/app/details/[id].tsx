@@ -22,7 +22,6 @@ import { TransactionData } from '@/components/transaction'
 import { TransactionTypeSelect } from '@/components/transaction-type-select'
 
 // UTILS
-import { mocks } from '@/utils/mocks'
 import { currencyFormat } from '@/utils/currency-format'
 
 type Details = {
@@ -44,8 +43,9 @@ export default function Details() {
   const goalId = Number(routeParams.id)
 
   // DATABASE
-  const goalRepository = useGoalRepository()
-  const transactionRepository = useTransactionRepository()
+  const { get: getGoal } = useGoalRepository()
+  const { findByGoal: findTransctionByGoal, create: createTransaction } =
+    useTransactionRepository()
 
   // BOTTOM SHEET
   const bottomSheetRef = useRef<Bottom>(null)
@@ -55,8 +55,8 @@ export default function Details() {
   const getDetails = useCallback(() => {
     try {
       if (goalId) {
-        const goal = goalRepository.get(goalId)
-        const transactions = mocks.transactions
+        const goal = getGoal(goalId)
+        const transactions = findTransctionByGoal(goalId)
 
         if (!goal || !transactions) {
           return router.back()
@@ -78,7 +78,7 @@ export default function Details() {
     } catch (error) {
       console.log(error)
     }
-  }, [goalId, goalRepository])
+  }, [goalId, getGoal, findTransctionByGoal])
 
   async function handleNewTransaction() {
     try {
@@ -92,7 +92,7 @@ export default function Details() {
         amountAsNumber = amountAsNumber * -1
       }
 
-      transactionRepository.create({ goalId, amount: amountAsNumber })
+      createTransaction({ goalId, amount: amountAsNumber })
 
       Alert.alert('Sucesso', 'Transação registrada!')
 

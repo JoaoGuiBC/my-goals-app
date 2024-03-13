@@ -1,3 +1,4 @@
+import { useCallback } from 'react'
 import { useSQLiteContext } from 'expo-sqlite/next'
 
 export interface GetGoals {
@@ -15,29 +16,31 @@ export interface CreateGoal {
 export function useGoalRepository() {
   const database = useSQLiteContext()
 
-  function get(id: number) {
-    const statement = database.prepareSync(`
-      SELECT g.id, g.name, g.total, COALESCE(SUM(t.amount), 0) AS current
-      FROM goals AS g
-      LEFT JOIN transactions t ON t.goal_id = g.id
-      WHERE g.id = $id
-      GROUP BY g.id, g.name, g.total
-    `)
+  const get = useCallback(
+    (id: number) => {
+      const statement = database.prepareSync(`
+    SELECT g.id, g.name, g.total, COALESCE(SUM(t.amount), 0) AS current
+    FROM goals AS g
+    LEFT JOIN transactions t ON t.goal_id = g.id
+    WHERE g.id = $id
+    GROUP BY g.id, g.name, g.total
+  `)
 
-    const result = statement.executeSync<GetGoals>({ $id: id })
+      const result = statement.executeSync<GetGoals>({ $id: id })
 
-    return result.getFirstSync()
-  }
+      return result.getFirstSync()
+    },
+    [database],
+  )
 
-  function list() {
-    console.log('bunda')
+  const list = useCallback(() => {
     return database.getAllSync<GetGoals>(`
-      SELECT g.id, g.name, g.total, COALESCE(SUM(t.amount), 0) AS current
-      FROM goals AS g
-      LEFT JOIN transactions t ON t.goal_id = g.id
-      GROUP BY g.id, g.name, g.total
-    `)
-  }
+        SELECT g.id, g.name, g.total, COALESCE(SUM(t.amount), 0) AS current
+        FROM goals AS g
+        LEFT JOIN transactions t ON t.goal_id = g.id
+        GROUP BY g.id, g.name, g.total
+      `)
+  }, [database])
 
   function create(goal: CreateGoal) {
     const statement = database.prepareSync(
